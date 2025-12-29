@@ -3,12 +3,13 @@ title: RSS下载器
 published: 2025-12-29
 description: ""
 image: ""
-tags: []
-category: Uncategorized
+tags: ["rss","python"]
+category: 动画
 draft: false
 pinned: false
 lang: zh-CN
 ---
+
 一个基于 Python 编写的 RSS 自动追番/下载工具，专门设计用于配合 qBittorrent 使用。它主要针对动漫资源站（代码逻辑中针对 "Mikan Project" 做了特定处理）进行自动化订阅、下载和整理。
 
 以下是该脚本的详细功能描述：

@@ -6,7 +6,7 @@ image: ""
 tags: ["测试", "加密"]
 category: "技术"
 draft: false
-pinned: true
+pinned: false
 lang: zh-CN
 encrypted: true
 password: "123456"

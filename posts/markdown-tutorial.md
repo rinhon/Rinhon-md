@@ -6,7 +6,7 @@ image: ""
 tags: [Markdown, 博客]
 category: 示例
 draft: false
-pinned: true
+pinned: false
 lang: zh-CN
 licenseName: "Unlicensed"
 author: Rinhon

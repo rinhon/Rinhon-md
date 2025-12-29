@@ -10,7 +10,7 @@ pinned: false
 lang: zh-CN
 ---
 
-## 解决 Codex 修改文件后中文乱码问题：根源在终端编码，不在 VS Code！
+## 解决 Codex 修改文件后中文乱码问题：根源在终端编码！
 
 > **关键词**：Codex、中文乱码、VS Code、PowerShell、UTF-8、终端编码、无 BOM
 
@@ -23,15 +23,13 @@ lang: zh-CN
 ```undefined
 æˆ‘çˆ±ä¸­æ–‡ → 实际应为 “我爱中文”
 ```
-
-很多人第一反应是：“是不是 VS Code 编码设置错了？”  
-但其实——**问题不在编辑器，而在终端！**
+**傻杯codex!!**
 
 ---
 
 ### 真正的根源
 
-Codex **并不直接在 VS Code 编辑器里写文件**，而是通过**终端（Terminal）执行命令**（如 `echo`、`sed`、`PowerShell` 脚本等）来修改文件内容。
+Codex 是通过**终端（Terminal）执行命令**（如 `echo`、`sed`、`PowerShell` 脚本等）来修改文件内容。
 
 流程如下：
 
@@ -44,7 +42,7 @@ Codex **并不直接在 VS Code 编辑器里写文件**，而是通过**终端�
 
 ---
 
-### ✅ 解决方案：双端统一为 UTF-8
+### 解决方案：双端统一为 UTF-8
 
 要彻底解决，必须同时配置：
 
@@ -67,13 +65,13 @@ Codex **并不直接在 VS Code 编辑器里写文件**，而是通过**终端�
 - `"files.encoding": "utf8"`：默认以 UTF-8 保存文件
 - `"files.autoGuessEncoding": true`：打开文件时自动检测编码（尤其对带 BOM 的文件友好）
 
-> ✅ 这一步确保 VS Code **读写一致**。
+> 确保 VS Code **读写一致**。
 
 ---
 
 ### 第二步：配置 PowerShell 终端为 UTF-8（重点！）
 
-#### 1️⃣ 确认你用的是哪个 PowerShell？
+#### PowerShell升级最新版本
 
 在终端运行：
 
@@ -86,7 +84,7 @@ $PSVersionTable.PSVersion
 
 > 强烈建议升级到 [PowerShell 7](https://aka.ms/powershell-release?tag=stable)，对 UTF-8 支持更好。
 
-#### 2️⃣ 找到你的 Profile 文件路径
+#### 找到 Profile 文件路径
 
 ```powershell
 $PROFILE
@@ -99,9 +97,9 @@ $PROFILE
 - **PowerShell 7+**：  
     `C:\Users\<用户名>\Documents\PowerShell\Microsoft.PowerShell_profile.ps1`
 
-#### 3️⃣ 使用安全脚本配置 UTF-8（无 BOM）
+#### 使用安全脚本配置 UTF-8（无 BOM）
 
-> ⚠️ 注意：**不要用 `Add-Content -Encoding UTF8`**，它会写入 **带 BOM 的 UTF-8**，可能引发其他工具兼容问题。  
+> 注意：**不要用 `Add-Content -Encoding UTF8`**，它会写入 **带 BOM 的 UTF-8**，可能引发其他工具兼容问题。  
 > 我们需要的是 **UTF-8 无 BOM**。
 
 运行以下完整脚本（支持幂等、避免重复、兼容 Win7/10/11）：
@@ -200,3 +198,5 @@ source ~/.bashrc
 - BOM（Byte Order Mark）在 Windows 记事本中常见，但 Linux/macOS 工具（如 `cat`、`grep`、Python）可能将其视为普通字符，导致解析错误。
 - VS Code、Git、Node.js、Python 等现代工具**默认期望无 BOM 的 UTF-8**。
 - 作为开发者，**统一使用 UTF-8 无 BOM 是最佳实践**。
+
+https://www.cnblogs.com/gccbuaa/p/19227315
