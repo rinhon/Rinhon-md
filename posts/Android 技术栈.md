@@ -1,3 +1,14 @@
+---
+title: Android 技术栈
+published: 2025-12-29
+description: ""
+image: ""
+tags: []
+category: Uncategorized
+draft: false
+pinned: false
+lang: zh-CN
+---
 # Koin 与 Spring IOC
 **宏观上来说，Koin 在 Android/Kotlin 开发中的角色，完全等同于 Spring 在 Java 后端开发中的 IoC（控制反转）容器的角色。**
 

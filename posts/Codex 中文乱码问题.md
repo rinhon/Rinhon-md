@@ -1,3 +1,14 @@
+---
+title: Codex 中文乱码问题
+published: 2025-12-29
+description: ""
+image: ""
+tags: []
+category: Uncategorized
+draft: false
+pinned: false
+lang: zh-CN
+---
 
 ## 解决 Codex 修改文件后中文乱码问题：根源在终端编码，不在 VS Code！
 

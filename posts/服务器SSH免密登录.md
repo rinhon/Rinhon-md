@@ -1,3 +1,14 @@
+---
+title: 服务器SSH免密登录
+published: 2025-12-29
+description: ""
+image: ""
+tags: []
+category: Uncategorized
+draft: false
+pinned: false
+lang: zh-CN
+---
 设置 SSH 免密登录（Key-based authentication）非常简单，分为两个步骤：**在 Windows 电脑上生成钥匙**，然后**把“公钥”放到服务器上**。
 
 在Windows PowerShell中依次执行以下步骤：
