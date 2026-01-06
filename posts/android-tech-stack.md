@@ -5,7 +5,9 @@ alias: android-tech-stack
 author: Rinhon
 description: ""
 image: ""
-tags: ["Android","Kotlin"]
+tags:
+  - Android
+  - Kotlin
 category: 学习技术
 draft: false
 pinned: false
