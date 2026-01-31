@@ -213,11 +213,11 @@ function Register-Menu {
     if (-not (Test-Path $CommandPath)) { New-Item -Path $CommandPath -Force | Out-Null }
     
     # 命令逻辑：调用 PowerShell 运行脚本，-WindowStyle Hidden 隐藏黑框
-    $Command = "pwsh.exe -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$TargetScript``" `"%1`""
+    $Command = "pwsh.exe -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$TargetScript`" `"%1`""
     
     # 如果没有 pwsh (PowerShell 7)，回退到 powershell (系统自带)
     if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
-        $Command = "powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$TargetScript``" `"%1`""
+        $Command = "powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$TargetScript`" `"%1`""
     }
 
     Set-ItemProperty -Path $CommandPath -Name "(default)" -Value $Command
