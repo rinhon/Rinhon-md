@@ -32,7 +32,8 @@ const localAnimeList: AnimeItem[] = [
 		totalEpisodes: 28,
 		startDate: "2023-09",
 		endDate: "2024-01",
-	},	{
+	},
+	{
 		title: "野生的大魔王出现了！",
 		status: "completed",
 		rating: 9.8,
@@ -47,6 +48,22 @@ const localAnimeList: AnimeItem[] = [
 		totalEpisodes: 12,
 		startDate: "2025-10",
 		endDate: "2025-12",
+	},
+	{
+		title: "Fate / strange Fake",
+		status: "completed",
+		rating: 9.8,
+		cover: "/assets/anime/Fate strange Fake.webp",
+		description: "魔术师与英灵为夺取能如愿所偿的愿望机“圣杯”而展开圣杯战争。日本的第五次圣杯战争结束后的几年，在美国西部的城市雪原市被观测到有新的圣杯战争预兆，集结的魔术师与英灵…… 缺失的职阶，无法被选中的英灵，暗中涌动的国家，为战斗造起来的城市。",
+		episodes: "13 episodes",
+		year: "2024",
+		genre: ["战斗","奇幻"],
+		studio: "A-1 Pictures",
+		link: "https://www.bilibili.com/bangumi/media/md28480911",
+		progress: 13,
+		totalEpisodes: 13,
+		startDate: "2024-01",
+		endDate: "2026-03",
 	},
 	
 ];

@@ -4,7 +4,7 @@ published: 2026-01-31
 alias: ohmyposh-install-guide
 author: Rinhon
 description: "一份详尽的指南，涵盖了 Oh My Posh 的安装、Nerd Font 字体的配置、Terminal-Icons 模块的集成，以及如何从官网选择、下载并应用自定义主题的全过程。"
-image: "cover-1.png"
+image: "cover.png"
 tags: ["Oh My Posh", "CLI", "PowerShell", "Terminal"]
 category: 开发工具
 draft: false
@@ -17,8 +17,6 @@ password: ""
 ## 介绍
 
 Oh My Posh 是一个为 PowerShell、Bash、Zsh 等 Shell 环境设计的高性能、可定制的主题引擎。它通过在提示符中集成 Git 状态、Kubernetes 上下文、项目依赖版本等信息，显著增强终端的功能性和视觉体验。
-
-![Oh My Posh Cover](cover.png)
 
 
 

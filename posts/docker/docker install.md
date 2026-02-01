@@ -1,10 +1,10 @@
 ---
 title: docker
 published: 2025-12-29
-alias: codex-chinese-encoding-issue
+alias: docker
 author: Rinhon
-description: ""
-image: ""
+description: "docker 相关知识，方便查询"
+image: "cover.svg"
 tags:
   - Linux
   - docker
@@ -14,9 +14,9 @@ pinned: false
 lang: zh-CN
 ---
 
-# docker
-
 ## 安装docker
+
+安装脚本：[官方脚本](https://get.docker.com/)
 
 
 ## docker 基础命令
