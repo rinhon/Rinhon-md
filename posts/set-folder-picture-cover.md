@@ -48,141 +48,132 @@ lang: zh-CN
 
 ```powershell
 param (
-    [string]$TargetItem
+    [string[]]$TargetItem
 )
 
-# --- 配置部分 ---
-$ErrorLogPath = [System.IO.Path]::Combine([Environment]::GetFolderPath("MyDocuments"), "FolderCover_ErrorLog.txt")
+# 1. 强制 UTF-8 输出
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+# --- 配置 ---
+$LogFile = [System.IO.Path]::Combine([Environment]::GetFolderPath("MyDocuments"), "FolderIcon_Debug.log")
 $ImageExtensions = @(".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff")
 
-# --- 嵌入 C# 代码：用于强制刷新 Windows 图标缓存 ---
+# --- Win32 API ---
 $code = @"
 [System.Runtime.InteropServices.DllImport("Shell32.dll")]
 public static extern int SHChangeNotify(int eventId, int flags, IntPtr item1, IntPtr item2);
 "@
-$Win32 = Add-Type -MemberDefinition $code -Name "Win32SHChangeNotify" -Namespace Win32Functions -PassThru
+try { $Win32 = Add-Type -MemberDefinition $code -Name "Win32SHChangeNotify" -Namespace Win32Functions -PassThru } catch {}
 
-# --- 函数定义 ---
-
+# --- 日志 ---
 function Write-Log {
-    param ([string]$Message)
-    $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Add-Content -Path $ErrorLogPath -Value "[$Timestamp] $Message" -Encoding UTF8
+    param ([string]$Message, [string]$Level = "INFO")
+    $Timestamp = Get-Date -Format "HH:mm:ss"
+    $LogEntry = "[$Timestamp] [$Level] $Message"
+    try {
+        $Encoding = New-Object System.Text.UTF8Encoding($true)
+        [System.IO.File]::AppendAllText($LogFile, $LogEntry + [Environment]::NewLine, $Encoding)
+    } catch {}
+    
+    $Colors = @{ "INFO"="White"; "WARN"="Yellow"; "ERROR"="Red"; "SUCCESS"="Green" }
+    $C = if ($Colors.ContainsKey($Level)) { $Colors[$Level] } else { "Gray" }
+    Write-Host $LogEntry -ForegroundColor $C
 }
 
-function Refresh-Explorer {
-    # 0x08000000 = SHCNE_ASSOCCHANGED (通知系统文件关联/图标已变更)
-    # 虽是核弹级刷新，但对文件夹图标生效最快
+function Update-Explorer {
+    Write-Log "发送图标刷新信号..." "INFO"
     $null = $Win32::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
 }
 
-function Set-CoverImage {
-    param (
-        [string]$FolderPath,
-        [string]$SourceImagePath
-    )
+function Set-FolderIcon {
+    param ([string]$FolderPath, [string]$SourceImagePath)
 
     try {
-        if (-not (Test-Path $SourceImagePath)) { return }
+        $FolderPath = (Get-Item -LiteralPath $FolderPath).FullName
+        $DestPath = [System.IO.Path]::Combine($FolderPath, "folder.ico")
+        $IniPath = [System.IO.Path]::Combine($FolderPath, "desktop.ini")
 
-        $DestPath = Join-Path -Path $FolderPath -ChildPath "folder.jpg"
+        Write-Log "处理路径: $FolderPath" "INFO"
 
-        # 1. 清理旧文件（需先移除只读/隐藏属性才能删除）
-        if (Test-Path $DestPath) {
-            $existing = Get-Item $DestPath
-            $existing.Attributes = "Normal"
-            Remove-Item -Path $DestPath -Force
+        # 1. 清理旧文件
+        foreach ($f in @("folder.ico", "folder.jpg", "desktop.ini")) {
+            $p = [System.IO.Path]::Combine($FolderPath, $f)
+            if (Test-Path -LiteralPath $p) {
+                Start-Process -FilePath "attrib.exe" -ArgumentList "-s -h -r `"$p`"" -WindowStyle Hidden -Wait
+                Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue
+            }
         }
 
-        # 2. 调用 ImageMagick 处理图片
-        # -gravity center: 居中定位
-        # -extent: 强制调整画布为 1:1 (宽=高，取原图中较小的一边)
-        $magickCmd = "magick"
+        # 2. 生成 ICO (ImageMagick)
+        Write-Log "生成图标..." "INFO"
         $argsList = @(
-            "`"$SourceImagePath`"", 
-            "-gravity", "center", 
-            "-extent", "`"%[fx:w<h?w:h]x%[fx:w<h?w:h]`"", 
+            "`"$SourceImagePath`"",
+            "-resize", "256x256^",
+            "-gravity", "center",
+            "-extent", "256x256",
+            "-define", "icon:auto-resize=256,128,64,48,32,16",
             "`"$DestPath`""
         )
-        
-        $process = Start-Process -FilePath $magickCmd -ArgumentList $argsList -WindowStyle Hidden -Wait -PassThru
-        
-        if ($process.ExitCode -ne 0) {
-            throw "ImageMagick CLI 执行失败，ExitCode: $($process.ExitCode)"
-        }
+        $proc = Start-Process -FilePath "magick" -ArgumentList $argsList -WindowStyle Hidden -Wait -PassThru
+        if ($proc.ExitCode -ne 0) { throw "Magick 转换失败" }
 
-        # 3. 设置 folder.jpg 为系统+隐藏
-        $file = Get-Item $DestPath
-        $file.Attributes = "Hidden, System"
+        # 3. 写入 desktop.ini (最简版)
+        Write-Log "配置 desktop.ini..." "INFO"
+        
+        # 只保留核心的一行
+        $iniContent = "[.ShellClassInfo]`r`nIconResource=folder.ico,0"
+        
+        # 依然使用 UTF-8 (PowerShell 默认带 BOM)
+        Set-Content -LiteralPath $IniPath -Value $iniContent -Encoding UTF8 -Force
 
-        # 4. 配置 desktop.ini
-        # 关键：文件夹必须设为 ReadOnly，Windows 才会去读 desktop.ini
-        $folder = Get-Item $FolderPath
-        $folder.Attributes = "ReadOnly"
+        # 4. 强制属性 (Attrib)
+        Write-Log "应用属性..." "INFO"
+        Start-Process -FilePath "attrib.exe" -ArgumentList "+s +h `"$DestPath`"" -WindowStyle Hidden -Wait
+        Start-Process -FilePath "attrib.exe" -ArgumentList "+s +h `"$IniPath`"" -WindowStyle Hidden -Wait
+        Start-Process -FilePath "attrib.exe" -ArgumentList "+r `"$FolderPath`"" -WindowStyle Hidden -Wait
 
-        $iniPath = Join-Path -Path $FolderPath -ChildPath "desktop.ini"
-        if (Test-Path $iniPath) {
-            (Get-Item $iniPath).Attributes = "Normal"
-        }
+        # 5. 时间戳刷新
+        (Get-Item -LiteralPath $IniPath -Force).LastWriteTime = Get-Date
         
-        # 写入配置 (使用 Unicode 编码以兼容特殊字符，虽然 folder.jpg 是纯英文)
-        $iniContent = "[.ShellClassInfo]`r`nLogo=folder.jpg"
-        Set-Content -Path $iniPath -Value $iniContent -Encoding Unicode -Force
-        
-        # desktop.ini 必须是 Hidden + System
-        (Get-Item $iniPath).Attributes = "Hidden, System"
-        
-        # 5. 触发刷新
-        Refresh-Explorer
+        Write-Log "成功。" "SUCCESS"
     }
     catch {
-        Write-Log "处理失败 [$FolderPath]: $_"
+        Write-Log "错误: $($_.Exception.Message)" "ERROR"
     }
-}
-
-function Find-FirstImage {
-    param ([string]$Path)
-    try {
-        # 排除 folder.jpg 自身，防止递归错误
-        $images = Get-ChildItem -Path $Path -File | Where-Object { 
-            $ImageExtensions -contains $_.Extension.ToLower() -and $_.Name -ne "folder.jpg" 
-        }
-        if ($images) {
-            return ($images | Select-Object -First 1).FullName
-        }
-    }
-    catch {
-        Write-Log "搜图失败 [$Path]: $_"
-    }
-    return $null
 }
 
 # --- 主入口 ---
-
 try {
-    # 清洗传入路径（去除注册表可能带来的多余引号）
-    $TargetItem = $TargetItem.Trim('"')
+    # 合并参数以支持多选
+    $AllPaths = @()
+    if ($TargetItem) { $AllPaths += $TargetItem }
+    if ($args) { $AllPaths += $args }
+    
+    $AllPaths = $AllPaths | Select-Object -Unique | ForEach-Object { $_.Trim().Trim('"') }
 
-    if (Test-Path $TargetItem -PathType Container) {
-        # === 场景 A: 用户右键了文件夹 ===
-        $img = Find-FirstImage -Path $TargetItem
-        if ($img) {
-            Set-CoverImage -FolderPath $TargetItem -SourceImagePath $img
-        } else {
-            Write-Log "跳过: 文件夹内无可用图片 - $TargetItem"
+    if ($AllPaths.Count -eq 0) { exit }
+
+    foreach ($RawPath in $AllPaths) {
+        if (-not (Test-Path -LiteralPath $RawPath)) { continue }
+
+        if (Test-Path -LiteralPath $RawPath -PathType Container) {
+            # 文件夹模式: 避开 folder.ico 和 folder.jpg
+            $img = Get-ChildItem -LiteralPath $RawPath -File | Where-Object { 
+                $ImageExtensions -contains $_.Extension.ToLower() -and $_.Name -notmatch "^folder\.(ico|jpg)$"
+            } | Select-Object -First 1
+            
+            if ($img) { Set-FolderIcon -FolderPath $RawPath -SourceImagePath $img.FullName }
+        }
+        else {
+            # 图片模式
+            $parent = Split-Path -Path $RawPath -Parent
+            Set-FolderIcon -FolderPath $parent -SourceImagePath $RawPath
         }
     }
-    elseif (Test-Path $TargetItem -PathType Leaf) {
-        # === 场景 B: 用户右键了图片 ===
-        $ext = [System.IO.Path]::GetExtension($TargetItem).ToLower()
-        if ($ImageExtensions -contains $ext) {
-            $parentDir = [System.IO.Path]::GetDirectoryName($TargetItem)
-            Set-CoverImage -FolderPath $parentDir -SourceImagePath $TargetItem
-        }
-    }
+    Update-Explorer
 }
 catch {
-    Write-Log "致命错误: $_"
+    Write-Log "Main Crash: $_" "ERROR"
 }
 
 ```
